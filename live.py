@@ -1,65 +1,91 @@
-from ultralytics import YOLO
+import streamlit as st
 import cv2
 import time
+from ultralytics import YOLO
 
+# Configuración inicial
+st.set_page_config(page_title="Lenguaje de Señas", layout="wide")
+
+# Cargar modelo
 model = YOLO("runs/detect/asl_model/weights/best.pt")
-cap = cv2.VideoCapture(0)
 
-last_letter = ""
-last_time = 0
-cooldown = 1.0
-word = ""
+# Inicializar estado
+if "running" not in st.session_state:
+    st.session_state.running = False
+if "word" not in st.session_state:
+    st.session_state.word = ""
+if "last_letter" not in st.session_state:
+    st.session_state.last_letter = ""
+if "last_time" not in st.session_state:
+    st.session_state.last_time = 0
+if "cooldown" not in st.session_state:
+    st.session_state.cooldown = 1.0
 
-print("[INFO] Presiona 'q' para salir - 'c' limpiar palabra - 's' mostrar palabra")
+# Sidebar
+with st.sidebar:
+    st.title("Reconocimiento de Señas")
+    st.markdown("Usa tu cámara para detectar letras y formar palabras.")
 
-while True:
-    ret, frame = cap.read()
-    if not ret:
-        break
+    st.session_state.cooldown = st.slider(
+        "Tiempo entre letras (s)", 0.5, 2.5, st.session_state.cooldown, 0.1
+    )
 
-    results = model.predict(frame, imgsz=416, conf=0.6)
-    annotated = results[0].plot()
+    if st.button("Iniciar"):
+        st.session_state.running = True
+    if st.button("Detener"):
+        st.session_state.running = False
+    if st.button("Limpiar palabra"):
+        st.session_state.word = ""
+        st.session_state.last_letter = ""
+        st.session_state.last_time = 0
+    if st.button("Guardar palabra"):
+        with open("palabras_guardadas.txt", "a") as f:
+            f.write(st.session_state.word + "\n")
+        st.success("Palabra guardada.")
 
-    if results and results[0].boxes and results[0].boxes.cls.numel() > 0:
-        class_id = int(results[0].boxes.cls[0])
-        label = model.names[class_id]
+# Layout principal
+st.title("Traductor Visual de Lenguaje de Señas")
+frame_col, text_col = st.columns([3, 1])
 
-        current_time = time.time()
-        if label != last_letter or (current_time - last_time) > cooldown:
-            word += label
-            last_letter = label
-            last_time = current_time
+frame_placeholder = frame_col.empty()
+word_placeholder = text_col.empty()
 
-        # Mostrar letra reconocida
-        cv2.putText(
-            annotated,
-            f"Letra: {label}",
-            (10, 80),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            1.0,
-            (0, 255, 0),
-            2,
+# Bucle de cámara
+if st.session_state.running:
+    cap = cv2.VideoCapture(0)
+
+    while st.session_state.running:
+        ret, frame = cap.read()
+        if not ret:
+            break
+
+        results = model.predict(frame, imgsz=416, conf=0.6)
+        annotated = results[0].plot()
+
+        if results and results[0].boxes and results[0].boxes.cls.numel() > 0:
+            class_id = int(results[0].boxes.cls[0])
+            label = model.names[class_id]
+
+            current_time = time.time()
+            if (
+                label != st.session_state.last_letter
+                or (current_time - st.session_state.last_time)
+                > st.session_state.cooldown
+            ):
+                st.session_state.word += label
+                st.session_state.last_letter = label
+                st.session_state.last_time = current_time
+
+        annotated_rgb = cv2.cvtColor(annotated, cv2.COLOR_BGR2RGB)
+        frame_placeholder.image(annotated_rgb, channels="RGB")
+
+        word_placeholder.markdown(
+            f"""
+            <div style='background-color:#1f77b4;padding:30px;border-radius:10px;color:white;text-align:center;font-size:30px;font-weight:bold;'>
+            Palabra: {st.session_state.word}
+            </div>
+            """,
+            unsafe_allow_html=True,
         )
 
-    # Mostrar palabra en pantalla
-    cv2.putText(
-        annotated,
-        f"Palabra: {word}",
-        (10, 40),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        1.2,
-        (255, 255, 255),
-        3,
-    )
-    cv2.imshow("Reconocimiento de Señales", annotated)
-
-    key = cv2.waitKey(1)
-    if key == ord("q"):
-        break
-    elif key == ord("c"):
-        word = ""
-    elif key == ord("s"):
-        print(f"[PALABRA FORMADA] {word}")
-
-cap.release()
-cv2.destroyAllWindows()
+    cap.release()
