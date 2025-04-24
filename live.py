@@ -27,7 +27,7 @@ with st.sidebar:
     st.markdown("Usa tu cámara para detectar letras y formar palabras.")
 
     st.session_state.cooldown = st.slider(
-        "Tiempo entre letras (s)", 0.5, 2.5, st.session_state.cooldown, 0.1
+        "Tiempo entre letras", 0.5, 2.5, st.session_state.cooldown, 0.1
     )
 
     if st.button("Iniciar"):
