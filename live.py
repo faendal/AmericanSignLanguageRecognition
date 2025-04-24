@@ -7,7 +7,7 @@ from ultralytics import YOLO
 st.set_page_config(page_title="Lenguaje de Señas", layout="wide")
 
 # Cargar modelo
-model = YOLO("runs/detect/asl_model/weights/best.pt")
+model = YOLO("runs/detect/asl_model2/weights/best.pt")
 
 # Inicializar estado
 if "running" not in st.session_state:

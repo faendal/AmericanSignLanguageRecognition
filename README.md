@@ -10,9 +10,7 @@ The dataset can be found at [`American Sign Language Letters`](https://universe.
 
 ## Model
 
-For this project, a YOLOv11n model is used. It was trained with a NVIDIA GTX 1650 GPU and 4GB of VRAM, with CUDA 12.4.
-
-The initial YOLO model can be found at [`YOLOv11n`](https://github.com/ultralytics/assets/releases/download/v8.3.0/yolo11n.pt)
+For this project, a YOLOv11m model is used. It was trained with a NVIDIA GTX 1650 GPU and 4GB of VRAM, with CUDA 12.4.
 
 The model was trained at [`Training`](https://github.com/faendal/AmericanSignLanguageRecognition/blob/main/train_model.py)
 
